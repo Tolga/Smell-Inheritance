@@ -50,11 +50,11 @@ namespace Smell_Inheritance.Processors
                     // CHECK EXISTANCE OF SMELL
                     if (smellySub.Smells.Any(s => s.Name == subSmell))
                     {
-                        smellySub.Smells.Single(s => s.Name == subSmell).Counts++;
+                        smellySub.Smells.Single(s => s.Name == subSmell).Status = true;
                     }
                     else
                     {
-                        smellySub.Smells.Add(new Smelly { Counts = 1, Name = subSmell });
+                        smellySub.Smells.Add(new Smelly { Status = true, Name = subSmell });
                     }
 
                     // ADD NAME OF RELATED CLASS IF NOT EXISTS
@@ -67,7 +67,7 @@ namespace Smell_Inheritance.Processors
                 {
                     var smellyClass = new SmellyClass { Name = subClass, Smells = new List<Smelly>(), Relations = new List<Relation>(), Type = SmellyClass.Types.SubClass};
                     smellyClass.Relations.Add(new Relation { ClassName = superClass, ProjectName = projectName });
-                    smellyClass.Smells.Add(new Smelly { Name = subSmell, Counts = 1 });
+                    smellyClass.Smells.Add(new Smelly { Name = subSmell, Status = true });
 
                     project.SmellyClass.Add(smellyClass);
                 }
@@ -81,11 +81,11 @@ namespace Smell_Inheritance.Processors
                     // CHECK EXISTANCE OF SMELL
                     if (smellySuper.Smells.Any(s => s.Name == superSmell))
                     {
-                        smellySuper.Smells.Single(s => s.Name == superSmell).Counts++;
+                        smellySuper.Smells.Single(s => s.Name == superSmell).Status = true;
                     }
                     else
                     {
-                        smellySuper.Smells.Add(new Smelly { Counts = 1, Name = superSmell });
+                        smellySuper.Smells.Add(new Smelly { Status = true, Name = superSmell });
                     }
 
                     // ADD NAME OF RELATED CLASS IF NOT EXISTS
@@ -98,7 +98,7 @@ namespace Smell_Inheritance.Processors
                 {
                     var smellyClass = new SmellyClass { Name = superClass, Smells = new List<Smelly>(), Relations = new List<Relation>(), Type = SmellyClass.Types.SuperClass};
                     smellyClass.Relations.Add(new Relation { ClassName = subClass, ProjectName = projectName });
-                    smellyClass.Smells.Add(new Smelly { Name = superSmell, Counts = 1 });
+                    smellyClass.Smells.Add(new Smelly { Name = superSmell, Status = true });
 
                     project.SmellyClass.Add(smellyClass);
                 }

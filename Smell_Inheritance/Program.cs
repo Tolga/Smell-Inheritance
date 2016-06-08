@@ -4,89 +4,101 @@ using System.IO;
 using System.Linq;
 using Smell_Inheritance.Models;
 using Smell_Inheritance.Processors;
-using Smell_Inheritance.Serializers;
+//using Smell_Inheritance.Serializers;
 
 namespace Smell_Inheritance
 {
     internal class Program
     {
-        private static List<string> ReadInheritances => File.ReadAllLines("Smell_Inheritance.txt").ToList();
+        private static List<string> ReadInheritances => File.ReadAllLines("Smell_Inheritance.csv").ToList();
         private static List<string> Smells => File.ReadAllText("Smells.txt").Split(char.Parse(",")).ToList();
 
         private static void Main()
         {
             var output = new List<string>();
-            var smells = new List<string>();
             var smellyProjects = new InheritedSmells().Process(ReadInheritances);
 
             foreach (var smellyProject in smellyProjects)
             {
-                /*
-                totalSubClass += smellyProject.SmellyClass.Count(sp => sp.Type == SmellyClass.Types.SubClass);
-                totalSuperClass += smellyProject.SmellyClass.Count(sp => sp.Type == SmellyClass.Types.SuperClass);
-                */
-
-                foreach (var smellyClass in smellyProject.SmellyClass.FindAll(sp=>sp.Type == SmellyClass.Types.SubClass))
+                foreach (
+                    var smellyClass in
+                        smellyProject.SmellyClass.FindAll(sp => sp.Type == SmellyClass.Types.SubClass))
                 {
-                    var newLine = smellyClass.Name;
-                    var subCounts = new Dictionary<string, int>();
-                    var superCounts = new Dictionary<string, int>();
+                    if (smellyClass.Name == "NA") continue;
+                    var newLine = smellyProject.Name + "." + smellyClass.Name;
+                    var subSmells = new Dictionary<string, bool>();
+                    var superSmells = new Dictionary<string, bool>();
 
                     foreach (var smell in Smells)
                     {
+                        // Check smells in subclass
                         if (smellyClass.Smells.Any(rs => rs.Name == smell))
                         {
-                            if (subCounts.ContainsKey(smell))
-                                subCounts[smell] += smellyClass.Smells.Find(rs => rs.Name == smell).Counts;
+                            if (subSmells.ContainsKey(smell))
+                                subSmells[smell] = true;
                             else
-                                subCounts.Add(smell, smellyClass.Smells.Find(rs => rs.Name == smell).Counts);
+                                subSmells.Add(smell, smellyClass.Smells.Find(rs => rs.Name == smell).Status);
+                        }
+                        else
+                        {
+                            if (!subSmells.ContainsKey(smell))
+                                subSmells.Add(smell, false);
                         }
                     }
 
+                    // Check for relations
                     if (smellyClass.Relations.Count > 0)
                     {
                         foreach (var relation in smellyClass.Relations)
                         {
-                            if (smellyProjects.Any(sp => sp.Name == relation.ProjectName && sp.SmellyClass.Any(sc=>sc.Name == relation.ClassName)))
-                            {
-                                var relatedSmells =
-                                    smellyProjects.First(sp => sp.Name == relation.ProjectName)
-                                        .SmellyClass.Find(sc => sc.Name == relation.ClassName)
-                                        .Smells;
-                                smells.AddRange(relatedSmells.Select(smell => smell.Name));
+                            // Get smells of related class
+                            var relatedSmells =
+                                smellyProjects.First(sp => sp.Name == relation.ProjectName)
+                                    .SmellyClass.Find(sc => sc.Name == relation.ClassName)
+                                    .Smells;
 
-                                foreach (var smell in Smells)
+                            foreach (var smell in Smells)
+                            {
+                                // Check smells in related class
+                                if (relatedSmells.Any(rs => rs.Name == smell))
                                 {
-                                    if (relatedSmells.Any(rs => rs.Name == smell))
-                                    {
-                                        if (superCounts.ContainsKey(smell))
-                                            superCounts[smell] += relatedSmells.Find(rs => rs.Name == smell).Counts;
-                                        else
-                                            superCounts.Add(smell, relatedSmells.Find(rs => rs.Name == smell).Counts);
-                                    }
+                                    // Add smells
+                                    if (superSmells.ContainsKey(smell))
+                                        superSmells[smell] = true;
+                                    else
+                                        superSmells.Add(smell, relatedSmells.Find(rs => rs.Name == smell).Status);
+                                }
+                                else
+                                {
+                                    if (!superSmells.ContainsKey(smell))
+                                        superSmells.Add(smell, false);
                                 }
                             }
                         }
                     }
 
+                    // Comparison of smells between Subclass and Superclass
                     foreach (var smell in Smells)
                     {
-                        if (subCounts.ContainsKey(smell))
+                        if (subSmells.Any(s => s.Key == smell && s.Value) &&
+                            superSmells.Any(b => b.Key == smell && b.Value))
                         {
-                            newLine += "," + subCounts[smell];
+                            newLine += "," + Smelly.Inheritances.Both + "." + smell;
                         }
+                        else if (subSmells.Any(s => s.Key == smell && s.Value) &&
+                                 !superSmells.Any(b => b.Key == smell && b.Value))
+                        {
+                            newLine += "," + Smelly.Inheritances.Subclass + "." + smell;
+                        }
+                        else if (!subSmells.Any(s => s.Key == smell && s.Value) &&
+                                 superSmells.Any(b => b.Key == smell && b.Value))
+                        {
+                            newLine += "," + Smelly.Inheritances.Superclass + "." + smell;
+                        } /*
                         else
                         {
-                            newLine += "," + 0;
-                        }
-                        if (superCounts.ContainsKey(smell))
-                        {
-                            newLine += "," + superCounts[smell];
-                        }
-                        else
-                        {
-                            newLine += "," + 0;
-                        }
+                            newLine += ",?";
+                        }*/
                     }
 
                     output.Add(newLine);
@@ -96,33 +108,15 @@ namespace Smell_Inheritance
             smells = smells.Distinct().ToList();
             smells.Sort();
             File.WriteAllText("Smells.txt", string.Join(",", smells));
+            Console.WriteLine("Sublasses: {0} - Superclasses {1}", totalSubClass, totalSuperClass);
             */
-            var header = "Subclass";
-            foreach (var smell in Smells)
-            {
-                string shortSmell;
-
-                var splitSmell = smell.Split(char.Parse(" ")).ToList();
-                if (splitSmell.Count > 1)
-                {
-                    shortSmell = splitSmell[0][0] +"."+ splitSmell[1];
-                }
-                else
-                {
-                    shortSmell = splitSmell[0];
-                }
-                header += "," + shortSmell + "_S," + shortSmell + "_B";
-            }
+            /*
+            var header = "Subclass," + string.Join(",", Smells);
             output.Insert(0, header);
-            //Console.WriteLine("Sublasses: {0} - Superclasses {1}", totalSubClass, totalSuperClass);
-            File.WriteAllLines("Inherited_Smells.txt", output);
+            */
+            File.WriteAllLines("Inherited_Smells.csv", output);
             Console.ReadLine();
         }
-        /*
-        if (smellyProject.SmellyClass.Any(sc => sc.Relations.Contains("NA")))
-        {
-            Console.WriteLine("YUHH");
-        }*/
 
         /*private static void SaveCommits(HashSet<User> commits, string fileName = "Commits")
         {

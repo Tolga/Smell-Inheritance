@@ -3,6 +3,14 @@
     public class Smelly
     {
         public string Name { get; set; }
-        public int Counts { get; set; }
+        public bool Status { get; set; }
+
+        public enum Inheritances
+        {
+            NONE,
+            Both,
+            Subclass,
+            Superclass
+        }
     }
 }
