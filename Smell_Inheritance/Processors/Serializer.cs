@@ -1,37 +1,37 @@
 ﻿using System.Collections.Generic;
 using Smell_Inheritance.Serializers;
+using Smell_Inheritance.Models;
 
 namespace Smell_Inheritance.Processors
 {
     public class Serializer
     {
-        /*
-        public Serialize(HashSet<User> commits, string fileName = "Commits")
+        public void Serialize(List<Project> projects)
         {
             var xml = new Xml();
-            var json = new Json();
-            var csv = new Csv();
+            //var json = new Json();
+            //var csv = new Csv();
 
-            foreach (var user in commits)
+            foreach (var project in projects)
             {
-                xml.AddUser(user.UserName);
-                json.AddUser(user.UserName);
-                foreach (var project in user.Projects)
+                xml.AddProject(project.Name);
+                //json.AddUser(project.Name);
+                foreach (var smellyClass in project.SmellyClass)
                 {
-                    var commitsByUser = user.Commits.FindAll(c => c.ProjectId == project);
-                    csv.Add(user.UserName, commitsByUser);
-                    xml.Add(project, commitsByUser);
-                    json.Add(project, commitsByUser);
+                    xml.Add(smellyClass.Name, smellyClass.Relations, smellyClass.Smells, smellyClass.Type);
+                    //csv.Add(smellyClass.Name, commitsByUser);
+                    //json.Add(smellyClass.Name, commitsByUser);
+
                 }
-                xml.CloseUser();
-                json.CloseUser();
+                xml.CloseProject();
+                //json.CloseUser();
             }
 
-            csv.Save(fileName);
+            //csv.Save(fileName);
             xml.CloseFile();
-            xml.Save(fileName);
-            json.CloseFile();
-            json.Save(fileName);
-        }*/
+            xml.Save();
+            //json.CloseFile();
+            //json.Save(fileName);
+        }
     }
 }

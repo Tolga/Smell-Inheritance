@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Smell_Inheritance.Models;
+using static Smell_Inheritance.Models.SmellyClass;
+using System.Diagnostics;
 
 namespace Smell_Inheritance.Processors
 {
@@ -43,20 +45,13 @@ namespace Smell_Inheritance.Processors
                 }
 
                 // CHECK EXISTING SUBCLASS
-                if (project.SmellyClass.Any(sc => sc.Type == SmellyClass.Types.SubClass && sc.Name == subClass))
+                if (project.SmellyClass.Any(sc => sc.Type == ClassType.SubClass && sc.Name == subClass))
                 {
                     // GET SUBCLASS
-                    var smellySub = project.SmellyClass.Single(sc => sc.Type == SmellyClass.Types.SubClass && sc.Name == subClass);
-
-                    // CHECK EXISTANCE OF SMELL
-                    if (smellySub.Smells.Any(s => s.Name == subSmell))
-                    {
-                        smellySub.Smells.Single(s => s.Name == subSmell).Status = true;
-                    }
-                    else
-                    {
-                        smellySub.Smells.Add(new Smelly { Status = true, Name = subSmell });
-                    }
+                    var smellySub = project.SmellyClass.Single(sc => sc.Type == ClassType.SubClass && sc.Name == subClass);
+                                       
+                    if (!smellySub.Smells[subSmell])
+                        smellySub.Smells[subSmell] = true;
 
                     // ADD NAME OF RELATED CLASS IF NOT EXISTS
                     if (!smellySub.Relations.Any(r => r.ClassName.Contains(superClass)))
@@ -66,28 +61,21 @@ namespace Smell_Inheritance.Processors
                 }
                 else
                 {
-                    var smellyClass = new SmellyClass { Name = subClass, Smells = new List<Smelly>(), Relations = new List<Relation>(), Type = SmellyClass.Types.SubClass};
+                    var smellyClass = new SmellyClass { Name = subClass, Relations = new List<Relation>(), Type = ClassType.SubClass};
                     smellyClass.Relations.Add(new Relation { ClassName = superClass, ProjectName = projectName });
-                    smellyClass.Smells.Add(new Smelly { Name = subSmell, Status = true });
+                    smellyClass.Smells[subSmell] = true;
 
                     project.SmellyClass.Add(smellyClass);
                 }
 
                 // CHECK EXISTING SUPERCLASS
-                if (project.SmellyClass.Any(sc => sc.Type == SmellyClass.Types.SuperClass && sc.Name == superClass))
+                if (project.SmellyClass.Any(sc => sc.Type == ClassType.SuperClass && sc.Name == superClass))
                 {
                     // GET SUPERCLASS
-                    var smellySuper = project.SmellyClass.Single(sc => sc.Type == SmellyClass.Types.SuperClass && sc.Name == superClass);
+                    var smellySuper = project.SmellyClass.Single(sc => sc.Type == ClassType.SuperClass && sc.Name == superClass);
 
-                    // CHECK EXISTANCE OF SMELL
-                    if (smellySuper.Smells.Any(s => s.Name == superSmell))
-                    {
-                        smellySuper.Smells.Single(s => s.Name == superSmell).Status = true;
-                    }
-                    else
-                    {
-                        smellySuper.Smells.Add(new Smelly { Status = true, Name = superSmell });
-                    }
+                    if (!smellySuper.Smells[superSmell])
+                        smellySuper.Smells[superSmell] = true;
 
                     // ADD NAME OF RELATED CLASS IF NOT EXISTS
                     if (!smellySuper.Relations.Any(r => r.ClassName.Contains(subClass)))
@@ -97,9 +85,9 @@ namespace Smell_Inheritance.Processors
                 }
                 else
                 {
-                    var smellyClass = new SmellyClass { Name = superClass, Smells = new List<Smelly>(), Relations = new List<Relation>(), Type = SmellyClass.Types.SuperClass};
+                    var smellyClass = new SmellyClass { Name = superClass, Relations = new List<Relation>(), Type = ClassType.SuperClass};
                     smellyClass.Relations.Add(new Relation { ClassName = subClass, ProjectName = projectName });
-                    smellyClass.Smells.Add(new Smelly { Name = superSmell, Status = true });
+                    smellyClass.Smells[superSmell] = true;
 
                     project.SmellyClass.Add(smellyClass);
                 }
@@ -108,86 +96,44 @@ namespace Smell_Inheritance.Processors
             return SmellyProjects;
         }
 
-        public void Save(List<string> smells, List<Project> smellyProjects, string path)
+        public void Save(List<Project> smellyProjects, string path)
         {
             var output = new List<string>();
 
             foreach (var smellyProject in smellyProjects)
             {
-                foreach (
-                    var smellyClass in
-                        smellyProject.SmellyClass.FindAll(sp => sp.Type == SmellyClass.Types.SubClass))
+                var smellySubclassesInProject = smellyProject.SmellyClass.FindAll(sp => sp.Type == ClassType.SubClass);
+
+                foreach (var smellySubclass in smellySubclassesInProject)
                 {
-                    if (smellyClass.Name == "NA") continue;
-                    var newLine = smellyProject.Name + "." + smellyClass.Name;
-                    var subSmells = new Dictionary<string, bool>();
-                    var superSmells = new Dictionary<string, bool>();
+                    if (smellySubclass.Name == "NA") continue;
+                    var newLine = smellyProject.Name + "." + smellySubclass.Name;
 
-                    foreach (var smell in smells)
+                    // Creat a list of smells in all related classes
+                    var relatedSmells = new List<string>();
+                    foreach (var related in smellySubclass.Relations)
                     {
-                        // Check smells in subclass
-                        if (smellyClass.Smells.Any(rs => rs.Name == smell))
-                        {
-                            if (subSmells.ContainsKey(smell))
-                                subSmells[smell] = true;
-                            else
-                                subSmells.Add(smell, smellyClass.Smells.Find(rs => rs.Name == smell).Status);
-                        }
-                        else
-                        {
-                            if (!subSmells.ContainsKey(smell))
-                                subSmells.Add(smell, false);
-                        }
-                    }
+                        var smellyP = smellyProjects.Single(sp => sp.Name == related.ProjectName);
+                        var smellyClass = smellyP.SmellyClass.Single(sc => sc.Name == related.ClassName && sc.Type == ClassType.SuperClass);
+                        var smells = smellyClass.Smells.Where(pair => pair.Value == true).Select(pair => pair.Key).ToList();
 
-                    // Check for relations
-                    if (smellyClass.Relations.Count > 0)
-                    {
-                        foreach (var relation in smellyClass.Relations)
-                        {
-                            // Get smells of related class
-                            var relatedSmells =
-                                smellyProjects.First(sp => sp.Name == relation.ProjectName)
-                                    .SmellyClass.Find(sc => sc.Name == relation.ClassName)
-                                    .Smells;
-
-                            foreach (var smell in smells)
-                            {
-                                // Check smells in related class
-                                if (relatedSmells.Any(rs => rs.Name == smell))
-                                {
-                                    // Add smells
-                                    if (superSmells.ContainsKey(smell))
-                                        superSmells[smell] = true;
-                                    else
-                                        superSmells.Add(smell, relatedSmells.Find(rs => rs.Name == smell).Status);
-                                }
-                                else
-                                {
-                                    if (!superSmells.ContainsKey(smell))
-                                        superSmells.Add(smell, false);
-                                }
-                            }
-                        }
+                        relatedSmells.AddRange(smells);
                     }
+                    relatedSmells.Distinct();
 
                     // Comparison of smells between Subclass and Superclass
-                    foreach (var smell in smells)
+                    foreach (var smell in smellySubclass.Smells)
                     {
-                        if (subSmells.Any(s => s.Key == smell && s.Value) &&
-                            superSmells.Any(b => b.Key == smell && b.Value))
+                        if (relatedSmells.Contains(smell.Key))
                         {
-                            newLine += "," + Smelly.Inheritances.Both;
+                            if (smell.Value)
+                                newLine += "," + SmellOn.Both;
+                            else
+                                newLine += "," + SmellOn.Superclass;
                         }
-                        else if (subSmells.Any(s => s.Key == smell && s.Value) &&
-                                 !superSmells.Any(b => b.Key == smell && b.Value))
+                        else if (smell.Value)
                         {
-                            newLine += "," + Smelly.Inheritances.Subclass;
-                        }
-                        else if (!subSmells.Any(s => s.Key == smell && s.Value) &&
-                                 superSmells.Any(b => b.Key == smell && b.Value))
-                        {
-                            newLine += "," + Smelly.Inheritances.Superclass;
+                            newLine += "," + SmellOn.Subclass;
                         }
                         else
                         {
@@ -205,7 +151,7 @@ namespace Smell_Inheritance.Processors
             Console.WriteLine("Sublasses: {0} - Superclasses {1}", totalSubClass, totalSuperClass);
             */
 
-            var header = "Subclass," + string.Join(",", smells);
+            var header = "Subclass, Blob Class, Blob Operation, Data Class, Data Clumps, Distorted Hierarchy, External Duplication, Feature Envy, God Class, Intensive Coupling, Internal Duplication, Message Chains, Refused Parent Bequest, Schizophrenic Class, Shotgun Surgery, Sibling Duplication, Tradition Breaker, NA";
             output.Insert(0, header);
 
             File.WriteAllLines(path + ".csv", output);

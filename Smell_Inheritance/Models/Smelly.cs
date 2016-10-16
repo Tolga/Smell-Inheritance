@@ -4,13 +4,5 @@
     {
         public string Name { get; set; }
         public bool Status { get; set; }
-
-        public enum Inheritances
-        {
-            NONE,
-            Both,
-            Subclass,
-            Superclass
-        }
     }
 }

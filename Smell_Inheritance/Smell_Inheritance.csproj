@@ -48,7 +48,6 @@
     <Compile Include="Models\Relation.cs" />
     <Compile Include="Models\SmellyClass.cs" />
     <Compile Include="Models\Project.cs" />
-    <Compile Include="Models\Smelly.cs" />
     <Compile Include="Processors\SmellParser.cs" />
     <Compile Include="Processors\RuleParser.cs" />
     <Compile Include="Processors\Serializer.cs" />

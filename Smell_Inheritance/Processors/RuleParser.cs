@@ -7,26 +7,24 @@ namespace Smell_Inheritance.Processors
 {
     public class RuleParser
     {
-        readonly List<string> _rules = new List<string>();
+        private readonly List<string> _rules = new List<string>();
 
         public List<string> Process(List<string> rules)
         {
-            var i = 1;
             foreach (var rule in rules)
             {
                 var splits = rule.Split(new []{ "==>" }, StringSplitOptions.None);
                 var left = splits[0].Trim().Split(Convert.ToChar(" ")).ToList();
                 left.RemoveAt(0);
                 left.RemoveAt(left.Count - 1);
-                var right = splits[1].Trim().Split(new[] { "    " }, StringSplitOptions.None).ToList().First().Split(Convert.ToChar(" ")).ToList();
+                var right = splits[1].Trim().Split(new[] { "    " }, StringSplitOptions.None).ToList();
+                var stats = right[1].Trim().Replace("conf", "").Replace("conv", "").Replace("lift", "").Replace("lev", "").Replace(":(", "").Replace(")", "").Replace("< ", "").Replace(">", "").Split(Convert.ToChar(" ")).ToList();
+                stats.RemoveAt(3);
+                right = right.First().Split(Convert.ToChar(" ")).ToList();
                 right.RemoveAt(right.Count - 1);
-
                 if (CompareClasses(left, right))
-                {
-                    _rules.Add(i++ + ". " + rule.Substring(1 + rule.IndexOf(Convert.ToChar("."))).Trim());
-                }
+                    _rules.Add(string.Join(" ", left) + "," + string.Join(" ", right) + "," + string.Join(",", stats));
             }
-
             return _rules;
         }
 
@@ -40,7 +38,9 @@ namespace Smell_Inheritance.Processors
 
         public void Save(string path)
         {
-            File.WriteAllLines(path + ".txt", _rules);
+            var header = "Antecedent,Consequent,Confidence,Lift,Leverage,Conviction";
+            _rules.Insert(0, header);
+            File.WriteAllLines(path + ".csv", _rules);
         }
     }
 }

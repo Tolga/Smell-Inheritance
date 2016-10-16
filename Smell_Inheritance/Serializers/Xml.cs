@@ -14,48 +14,50 @@ namespace Smell_Inheritance.Serializers
             Data = new List<string>();
         }
 
-        public void AddUser(string userName)
+        public void AddProject(string projectName)
         {
             if (!Data.Any())
-                Data.Add("<Users>");
-            Data.Add("<User>");
-            Data.Add("<Name>" + userName + "</Name>");
-            Data.Add("<Projects>");
+                Data.Add("<Projects>");
+            Data.Add("<Project>");
+            Data.Add("<Name>" + projectName + "</Name>");
+            Data.Add("<Classes>");
         }
 
-        /*public void Add(int projectId, List<Commit> commits)
+        public void Add(string className, List<Relation> relations, Dictionary<string, bool> smells, SmellyClass.ClassType type)
         {
-            Data.Add("<Project>");
-                Data.Add("<ProjectId>" + projectId + "</ProjectId>");
-                Data.Add("<Commits>");
-                    foreach (var commit in commits)
+            Data.Add("<Class>");
+                Data.Add("<Name>" + className + "</Name>");
+                Data.Add("<RelatedClasses>");
+                    foreach (var relation in relations)
                     {
-                        Data.Add("<Commit>");
-                            Data.Add("<CommitId>" + commit.CommitId + "</CommitId>");
-                            Data.Add("<TimeStamp>" + commit.Date + "</TimeStamp>");
-                            Data.Add("<Changes>");
-                                Data.Add("<Added>" + commit.Changes.Added + "</Added>");
-                                Data.Add("<Modified>" + commit.Changes.Modified + " </Modified>");
-                                Data.Add("<Deleted>" + commit.Changes.Deleted + "</Deleted>");
-                            Data.Add("</Changes>");
-                        Data.Add("</Commit>");
+                        Data.Add("<RelatedClass>");
+                            Data.Add("<ProjectName>" + relation.ProjectName + "</ProjectName>");
+                            Data.Add("<ClassName>" + relation.ClassName + "</ClassName>");
+                        Data.Add("</RelatedClass>");
                     }
-                Data.Add("</Commits>");
-            Data.Add("</Project>");
-        }*/
+                Data.Add("</RelatedClasses>");
+                Data.Add("<Smells>");
+                    foreach (var smell in smells)
+                    {
+                        Data.Add("<Smell>" + smell.Key + "</Smell>");
+                    }
+                Data.Add("</Smells>");
+                Data.Add("<Type>" + type + "</Type>");
+            Data.Add("</Class>");
+        }
 
-        public void CloseUser()
+        public void CloseProject()
         {
-            Data.Add("</Projects>");
-            Data.Add("</User>");
+            Data.Add("</Classes>");
+            Data.Add("</Project>");
         }
 
         public void CloseFile()
         {
-            Data.Add("</Users>");
+            Data.Add("</Projects>");
         }
 
-        public void Save(string fileName = "Commits")
+        public void Save(string fileName = "MappedData")
         {
             File.WriteAllLines(fileName + ".xml", Data);
         }
